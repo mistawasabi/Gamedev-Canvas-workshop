@@ -1,181 +1,205 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+   	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+   	<script src="test.js"> </script>
     <meta charset="utf-8" />
-    <title>Gamedev Canvas Workshop - lesson 10: finishing up</title>
-    <style>* { padding: 0; margin: 0; } canvas { background: #eee; display: block; margin: 0 auto; }</style>
+    <title>Gamedev Canvas Workshop - lesson 2: move the ball</title>
+    <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0px;
+      border: 0;
+      overflow: hidden; /*  Disable scrollbars */
+      display: block;  /* No floating content on sides */
+    }
+    </style>
 </head>
 <body>
-
-<canvas id="myCanvas" width="480" height="320"></canvas>
-
+	<div id="nocursor">
+        <canvas id="myCanvas" width="480" height="320"></canvas>
+    </div>
 <script>
+    (function() {
+        var
+        // Obtain a reference to the canvas element using its id.
+        htmlCanvas = document.getElementById('myCanvas'),
+        // Obtain a graphics context on the canvas element for drawing.
+        context = htmlCanvas.getContext('2d');
+
+       // Start listening to resize events and draw canvas.
+       initialize();
+
+       function initialize() {
+           // Register an event listener to call the resizeCanvas() function 
+           // each time the window is resized.
+           window.addEventListener('resize', resizeCanvas, false);
+           // Draw canvas border for the first time.
+           resizeCanvas();
+        }
+
+        // Display custom canvas. In this case it's a blue, 5 pixel 
+        // border that resizes along with the browser window.
+        function redraw() {
+           context.strokeStyle = 'white';
+           context.lineWidth = '5';
+           context.strokeRect(0, 0, window.innerWidth, window.innerHeight);
+        }
+
+        // Runs each time the DOM window resize event fires.
+        // Resets the canvas dimensions to match window,
+        // then draws the new borders accordingly.
+        function resizeCanvas() {
+            htmlCanvas.width = window.innerWidth;
+            htmlCanvas.height = window.innerHeight;
+            redraw();
+        }
+    })();
+
+    </script>
+<script>
+	document.getElementById("nocursor").style.cursor = 'none';
+	//var randomColor = "#000000".replace(/0/g,function(){return (~~(Math.random()*16)).toString(16);});
     var canvas = document.getElementById("myCanvas");
     var ctx = canvas.getContext("2d");
-    var ballRadius = 10;
+    var canvasPos = getPosition(canvas);
     var x = canvas.width/2;
     var y = canvas.height-30;
     var dx = 2;
-    var dy = -2;
-    var paddleHeight = 10;
-    var paddleWidth = 75;
-    var paddleX = (canvas.width-paddleWidth)/2;
-    var rightPressed = false;
-    var leftPressed = false;
-    var brickRowCount = 5;
-    var brickColumnCount = 3;
-    var brickWidth = 75;
-    var brickHeight = 20;
-    var brickPadding = 10;
-    var brickOffsetTop = 30;
-    var brickOffsetLeft = 30;
-    var score = 0;
-    var lives = 3;
+    var dy = 2;
+    var ballNumber = 30;
+    var balls = [];
+    var mouseX = 0;
+    var mouseY = 0;
 
-    var bricks = [];
-    for(c=0; c<brickColumnCount; c++) {
-        bricks[c] = [];
-        for(r=0; r<brickRowCount; r++) {
-            bricks[c][r] = { x: 0, y: 0, status: 1 };
+    canvas.addEventListener("mousemove", setMousePosition, false);
+
+
+	for (c = 0; c < ballNumber; c++){
+    	z = Math.floor(Math.random() * 2)
+    	i = Math.floor(Math.random() * 100)
+    	i1 = 3.8 + Math.random()*.6;
+    	po = 1;
+    	op = 50;
+    	rendum = i
+    	radiuss = 20;
+    	if (z == 1){
+    		po = -1
+    		op = -100
+    	}
+    	if (i < 10){
+    		i1 = 2 + Math.random()*.4;
+    	}
+    	if (i > 90){
+    		i1 = 6.6 + Math.random()*.4;
+
+    	}
+    	if (rendum < 20){
+    		radiuss = 14 - Math.random()*4;
+    	}
+    	if (rendum > 80){
+    		radiuss = 26 + Math.random()*4;
+    	}
+
+    	balls[c] = {status: 1, x: Math.floor(Math.random() * 1000 + canvas.width), y: op + Math.floor(Math.random()*canvas.height), dx: -i1, dy: po*(Math.random()*1), radius: radiuss};
+    }
+    
+
+
+	function setMousePosition(e) {
+        mouseX = e.clientX - canvasPos.x;
+        mouseY = e.clientY - canvasPos.y;
+    }   
+    function getPosition(el) {
+        var xPosition = 0;
+        var yPosition = 0;
+ 
+        while (el) {
+            xPosition += (el.offsetLeft - el.scrollLeft + el.clientLeft);
+            yPosition += (el.offsetTop - el.scrollTop + el.clientTop);
+            el = el.offsetParent;
         }
+        return {
+            x: xPosition,
+            y: yPosition
+        };
+    }  
+
+    
+
+
+
+
+    function collision() {
+    	for (c = 0; c < ballNumber; c++) {
+    		if (Math.abs(mouseX - balls[c].x) < 16 + balls[c].radius && Math.abs(mouseY - balls[c].y) < 16 + balls[c].radius) {
+    			balls[c].x = -100;
+    			balls[c].y = -100;
+    			balls[c].dx = 0;
+    			balls[c].dy = 0;
+    			balls[c].status = 0;
+    		}
+    	}
     }
 
-    document.addEventListener("keydown", keyDownHandler, false);
-    document.addEventListener("keyup", keyUpHandler, false);
-    document.addEventListener("mousemove", mouseMoveHandler, false);
 
-    function keyDownHandler(e) {
-        if(e.keyCode == 39) {
-            rightPressed = true;
-        }
-        else if(e.keyCode == 37) {
-            leftPressed = true;
-        }
-    }
-    function keyUpHandler(e) {
-        if(e.keyCode == 39) {
-            rightPressed = false;
-        }
-        else if(e.keyCode == 37) {
-            leftPressed = false;
-        }
-    }
-    function mouseMoveHandler(e) {
-        var relativeX = e.clientX - canvas.offsetLeft;
-        if(relativeX > 0 && relativeX < canvas.width) {
-            paddleX = relativeX - paddleWidth/2;
-        }
-    }
-    function collisionDetection() {
-        for(c=0; c<brickColumnCount; c++) {
-            for(r=0; r<brickRowCount; r++) {
-                var b = bricks[c][r];
-                if(b.status == 1) {
-                    if(x > b.x && x < b.x+brickWidth && y > b.y && y < b.y+brickHeight) {
-                        dy = -dy;
-                        b.status = 0;
-                        score++;
-                        if(score == brickRowCount*brickColumnCount) {
-                            alert("YOU WIN, CONGRATS!");
-                            document.location.reload();
-                        }
-                    }
-                }
-            }
-        }
-    }
 
+
+
+
+
+
+
+    function drawEnemies() {
+    	for (c = 0; c < ballNumber; c++){
+        	ctx.beginPath();
+        	ctx.arc(balls[c].x, balls[c].y, balls[c].radius, 0, Math.PI*2);
+        	ctx.fillStyle = "#ff0000";
+        	ctx.fill();
+        	ctx.closePath();
+    	}
+    	
+    }
     function drawBall() {
+        
         ctx.beginPath();
-        ctx.arc(x, y, ballRadius, 0, Math.PI*2);
-        ctx.fillStyle = "#0095DD";
+        ctx.arc(mouseX, mouseY, 20, 0, Math.PI*2);
+        ctx.fillStyle = "#0033ff";
         ctx.fill();
-        ctx.closePath();
     }
-    function drawPaddle() {
-        ctx.beginPath();
-        ctx.rect(paddleX, canvas.height-paddleHeight, paddleWidth, paddleHeight);
-        ctx.fillStyle = "#0095DD";
-        ctx.fill();
-        ctx.closePath();
-    }
-    function drawBricks() {
-        for(c=0; c<brickColumnCount; c++) {
-            for(r=0; r<brickRowCount; r++) {
-                if(bricks[c][r].status == 1) {
-                    var brickX = (r*(brickWidth+brickPadding))+brickOffsetLeft;
-                    var brickY = (c*(brickHeight+brickPadding))+brickOffsetTop;
-                    bricks[c][r].x = brickX;
-                    bricks[c][r].y = brickY;
-                    ctx.beginPath();
-                    ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                    ctx.fillStyle = "#0095DD";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            }
-        }
-    }
-    function drawScore() {
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#0095DD";
-        ctx.fillText("Score: "+score, 8, 20);
-    }
-    function drawLives() {
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#0095DD";
-        ctx.fillText("Lives: "+lives, canvas.width-65, 20);
-    }
-
+   
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawBricks();
+    	ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawEnemies();
         drawBall();
-        drawPaddle();
-        drawScore();
-        drawLives();
-        collisionDetection();
 
-        if(x + dx > canvas.width-ballRadius || x + dx < ballRadius) {
-            dx = -dx;
-        }
-        if(y + dy < ballRadius) {
-            dy = -dy;
-        }
-        else if(y + dy > canvas.height-ballRadius) {
-            if(x > paddleX && x < paddleX + paddleWidth) {
-                dy = -dy;
-            }
-            else {
-                lives--;
-                if(!lives) {
-                    alert("GAME OVER");
-                    document.location.reload();
-                }
-                else {
-                    x = canvas.width/2;
-                    y = canvas.height-30;
-                    dx = 3;
-                    dy = -3;
-                    paddleX = (canvas.width-paddleWidth)/2;
-                }
-            }
-        }
 
-        if(rightPressed && paddleX < canvas.width-paddleWidth) {
-            paddleX += 7;
-        }
-        else if(leftPressed && paddleX > 0) {
-            paddleX -= 7;
-        }
+        for (c = 0; c < ballNumber; c++){
 
-        x += dx;
-        y += dy;
-        requestAnimationFrame(draw);
+        	if (balls[c].x < 0 && balls[c].status == 1) {
+        		balls[c].x = canvas.width;
+        		balls[c].y = Math.floor(Math.random()*canvas.height);
+        	}
+
+    	
+        	balls[c].x += balls[c].dx;
+        	balls[c].y += balls[c].dy;
+        
+    	}
+
+    	collision();
+
+
+    	requestAnimationFrame(draw);
+
     }
+
+
 
     draw();
+    
 </script>
-
 </body>
 </html>
